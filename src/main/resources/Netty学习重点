@@ -7,12 +7,14 @@
     简单来说，wrappedBuffer是封装了原数据的引用，而copiedBuffer则是创建了原数据的副本。因此，在处理原数据时，使用哪种方法主要取决于你的具体需求。
 5.FixedLengthFrameDecoder只是按照固定长度截取字节流，String根据编码不同字节长度也不一样
 6.socketChannel.pipeline().addLast顺序很重要
-  先说最基本的， 读入数据，需要解码数据，执行顺序和注册顺序一致 in1 --> in2 -->in3 他们之间通过 ctx.fireChannelRead(msg);进行传递
+  先说最基本的， 读入数据，需要解码数据，
+  in执行顺序和注册顺序一致 in1 --> in2 -->in3 他们之间通过 ctx.fireChannelRead(msg);进行传递
   解码完成，逻辑处理，进行数据发送 通过 ctx.writeAndFlush()就完成从in -->out的转换
   out的执行顺是和注册顺序相反的，也就是out2 -->out1这么个顺序 out间的传递通过ctx.writeAndFlush();
   ctx.channel().writeAndFlush()  和 ctx.writeAndFlush() 区别
   ctx.writeAndFlush()是从当前节点往前查找out类handler
   ctx.channel().writeAndFlush()；这是从链表结尾开始往前查找out类handler
+  其中需要注意的是发送的数据encode,上一步发送的是什么，下一步需要匹配数据类型，收到的数据decode,上一步解码的是什么，下一步也需要匹配数据类型
 7.Netty中编码器实际为Outbound通道处理器，主要是通过类型参数匹配器TypeParameterMatcher，来判断消息是否可以被编码器处理
 8.FixedLengthFrameDecoder和StringDecoder，前面一个用于处理固定长度的消息的粘包和拆包问题，第二个则是将处理之后的消息转换为字符串
 9.LineBasedFrameDecoder和DelimiterBasedFrameDecoder。这里LineBasedFrameDecoder的作用主要是通过换行符，即\n或者\r\n对数据进行处理；而DelimiterBasedFrameDecoder的作用则是通过用户指定的分隔符对数据进行粘包和拆包处理
@@ -27,3 +29,4 @@
    lengthFieldLength：长度字段所占字节数
    lengthIncludesLengthFieldLength：是否将长度字段所占字节数加到消息里 false不加 initialBytesToStrip就要输入对应的长度字节数
 13.MessageToByteEncoder和ByteToMessageDecoder。这里MessageToByteEncoder的作用是将响应数据编码为一个ByteBuf对象，而ByteToMessageDecoder则是将接收到的ByteBuf数据转换为某个对象数据。通过实现这两个抽象类，用户就可以达到实现自定义粘包和拆包处理的目的
+14.ByteToMessageDecoder可以和MessageToMessageDecoder结合使用，ByteToMessageDecoder转换的数据类型，在MessageToMessageDecoder的数据类型可以继续转换为不同的数据类型
