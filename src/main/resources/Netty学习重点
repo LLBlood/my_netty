@@ -1,0 +1,29 @@
+1.客户端使用SimpleChannelInboundHandler<ByteBuf>时，传输的数据格式为ByteBuf，且只有ByteBuf时，才能进入channelRead0方法
+2.服务端的handler每次有新连接时，都是新创建的对象
+3.@ChannelHandler.Sharable注解是否有效，具体做什么的不知道
+4.wrappedBuffer和copiedBuffer都是Netty中用于处理字节序列的方法，它们的主要区别在于对原始数据操作的影响。
+    wrappedBuffer是对现有字节数组或字节缓冲区的封装，它提供了一个视图，当底层数据发生变化时，封装后的视图中的数据也会相应地按顺序变化。
+    而copiedBuffer则会将现有字节数组、字节缓冲区或字符串进行深复制，这样原数据的任何改动都不会影响copiedBuffer中的数据。因此，copiedBuffer与原数据并不共享数据。
+    简单来说，wrappedBuffer是封装了原数据的引用，而copiedBuffer则是创建了原数据的副本。因此，在处理原数据时，使用哪种方法主要取决于你的具体需求。
+5.FixedLengthFrameDecoder只是按照固定长度截取字节流，String根据编码不同字节长度也不一样
+6.socketChannel.pipeline().addLast顺序很重要
+  先说最基本的， 读入数据，需要解码数据，执行顺序和注册顺序一致 in1 --> in2 -->in3 他们之间通过 ctx.fireChannelRead(msg);进行传递
+  解码完成，逻辑处理，进行数据发送 通过 ctx.writeAndFlush()就完成从in -->out的转换
+  out的执行顺是和注册顺序相反的，也就是out2 -->out1这么个顺序 out间的传递通过ctx.writeAndFlush();
+  ctx.channel().writeAndFlush()  和 ctx.writeAndFlush() 区别
+  ctx.writeAndFlush()是从当前节点往前查找out类handler
+  ctx.channel().writeAndFlush()；这是从链表结尾开始往前查找out类handler
+7.Netty中编码器实际为Outbound通道处理器，主要是通过类型参数匹配器TypeParameterMatcher，来判断消息是否可以被编码器处理
+8.FixedLengthFrameDecoder和StringDecoder，前面一个用于处理固定长度的消息的粘包和拆包问题，第二个则是将处理之后的消息转换为字符串
+9.LineBasedFrameDecoder和DelimiterBasedFrameDecoder。这里LineBasedFrameDecoder的作用主要是通过换行符，即\n或者\r\n对数据进行处理；而DelimiterBasedFrameDecoder的作用则是通过用户指定的分隔符对数据进行粘包和拆包处理
+10.LengthFieldBasedFrameDecoder与LengthFieldPrepender需要配合起来使用，其实本质上来讲，这两者一个是解码，一个是编码的关系。它们处理粘拆包的主要思想是在生成的数据包中添加一个长度字段，用于记录当前数据包的长度。LengthFieldBasedFrameDecoder会按照参数指定的包长度偏移量数据对接收到的数据进行解码，从而得到目标消息体数据；而LengthFieldPrepender则会在响应的数据前面添加指定的字节数据，这个字节数据中保存了当前消息体的整体字节数据长度;
+11.LengthFieldBasedFrameDecoder，这里需要对其构造函数参数进行介绍：
+   maxFrameLength：指定了每个包所能传递的最大数据包大小；
+   lengthFieldOffset：指定了长度字段在字节码中的偏移量；
+   lengthFieldLength：指定了长度字段所占用的字节长度；
+   lengthAdjustment：对一些不仅包含有消息头和消息体的数据进行消息头的长度的调整，这样就可以只得到消息体的数据，这里的lengthAdjustment指定的就是消息头的长度；
+   initialBytesToStrip：忽略掉消息头以及长度字段占用的字节。
+12.LengthFieldPrepender
+   lengthFieldLength：长度字段所占字节数
+   lengthIncludesLengthFieldLength：是否将长度字段所占字节数加到消息里 false不加 initialBytesToStrip就要输入对应的长度字节数
+13.MessageToByteEncoder和ByteToMessageDecoder。这里MessageToByteEncoder的作用是将响应数据编码为一个ByteBuf对象，而ByteToMessageDecoder则是将接收到的ByteBuf数据转换为某个对象数据。通过实现这两个抽象类，用户就可以达到实现自定义粘包和拆包处理的目的
