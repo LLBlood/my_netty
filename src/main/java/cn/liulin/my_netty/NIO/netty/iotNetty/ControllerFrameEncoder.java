@@ -13,6 +13,11 @@ public class ControllerFrameEncoder extends MessageToByteEncoder<String>{
 		byte[] msgByte = msg.getBytes(StandardCharsets.UTF_8);
 		out.writeShort((short)0xffff);
 		out.writeInt(msgByte.length);
+//		byte[] newData = new byte[3];
+//		System.arraycopy(msgByte,0, newData, 0, 3);
+//		out.writeBytes(newData);
+//		ctx.writeAndFlush(out);
 		out.writeBytes(msgByte);
+//		ctx.writeAndFlush(out);
 	}
 }
